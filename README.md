@@ -58,7 +58,7 @@ What should change? › use a feat: prefix
   dense markdown summary (~1500 words). It covers purpose, layout, key
   components, data flow, conventions and a *documentation map* (which doc
   covers what). This is stored per clone at `.git/cgit/knowledge.md`, so it is
-  never committed.
+  never committed. Set `knowledge_dir` in `.cgit.toml` to store it elsewhere.
 - **Later runs:** the summary records the commit it describes. When `HEAD`
   moves (through cgit or plain git), only `git diff <base> HEAD` is sent to
   update it. The repo is never re-read. If the base commit disappears, for
@@ -100,6 +100,10 @@ You can set:
 - The docs commit message template.
 - `review_docs = true`, to see and approve the docs diff before it is committed.
 - Extra commit-message rules, such as ticket prefixes.
+- `knowledge_dir`, to move the knowledge and refresh state out of `.git/cgit`.
+  The path is relative to the repo root or absolute. A folder inside the repo
+  gets its own `.gitignore` so it is never committed. Give each repo its own
+  folder, because two repos sharing one would overwrite each other's knowledge.
 
 ## Costs and limits
 
