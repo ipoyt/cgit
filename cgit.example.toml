@@ -23,3 +23,9 @@ message_guidelines = "Prefix the subject with the FTD-<n> ticket from the branch
 # Diff size sent to Claude before truncation, and knowledge-base size target.
 max_diff_chars = 60000
 knowledge_max_words = 1500
+
+# Where the knowledge and refresh state are stored (default: .git/cgit).
+# Relative to the repo root, or absolute; `~` works. A folder inside the repo
+# gets its own `.gitignore` so it is never committed. Give each repo its own
+# folder: two repos sharing one would overwrite each other's knowledge.
+# knowledge_dir = ".cgit"

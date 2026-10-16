@@ -13,12 +13,21 @@ class Repo:
             die("not inside a git repository")
         os.chdir(root)
         self.root = root
-        self.state_dir = os.path.join(os.path.abspath(git("rev-parse", "--git-common-dir").strip()), "cgit")
-        os.makedirs(self.state_dir, exist_ok=True)
         self.cfg = dict(DEFAULT_CONFIG)
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, "rb") as f:
                 self.cfg.update(tomllib.load(f))
+        custom = self.cfg["knowledge_dir"]
+        if custom:
+            self.state_dir = os.path.abspath(os.path.expanduser(custom))
+        else:
+            self.state_dir = os.path.join(os.path.abspath(git("rev-parse", "--git-common-dir").strip()), "cgit")
+        os.makedirs(self.state_dir, exist_ok=True)
+        # Inside the work tree, keep it out of `git add -A` and the docs agent's change check.
+        ignore = os.path.join(self.state_dir, ".gitignore")
+        if custom and os.path.commonpath([self.state_dir, root]) == root and not os.path.exists(ignore):
+            with open(ignore, "w") as f:
+                f.write("*\n")
 
     def path(self, name):
         return os.path.join(self.state_dir, name)

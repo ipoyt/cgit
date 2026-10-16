@@ -11,6 +11,8 @@ DEFAULT_CONFIG = {
     "message_guidelines": "",  # extra rules appended to the commit-message prompt
     "max_diff_chars": 60000,
     "knowledge_max_words": 1500,
+    # Where knowledge and refresh state live; relative to the repo root. Empty = .git/cgit.
+    "knowledge_dir": "",
 }
 
 CONFIG_FILE = ".cgit.toml"
