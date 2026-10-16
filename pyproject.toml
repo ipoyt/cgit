@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cgit"
+version = "0.1.0"
+description = "A git wrapper where Claude writes the commit message and keeps docs in sync."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.scripts]
+cgit = "cgit_lib.cli:run"
+
+[tool.setuptools]
+packages = ["cgit_lib"]
