@@ -26,4 +26,10 @@ claude --version
 - macOS: `brew install python`
 - No admin rights, or an old system Python: install
   [uv](https://docs.astral.sh/uv/) and run `uv python install 3.12`.
-- Windows: use WSL. cgit doesn't run on native Windows.
+- Windows: `winget install astral-sh.uv`, then `uv tool install` cgit as
+  shown in the README; uv fetches Python for you. Or install Python from
+  python.org (the Microsoft Store `python` shortcut isn't a real Python).
+  You also need [Git for Windows](https://git-scm.com/download/win).
+
+On Windows, check with `py --version` (or `python --version`) instead of
+`python3 --version`.

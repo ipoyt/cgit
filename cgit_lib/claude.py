@@ -27,7 +27,8 @@ def claude_bin():
     home = os.path.expanduser("~")
     candidates = []
     for ext_dir in (".vscode-server/extensions", ".vscode/extensions", ".cursor/extensions"):
-        candidates += glob.glob(os.path.join(home, ext_dir, "anthropic.claude-code-*", "resources", "native-binary", "claude"))
+        for name in ("claude", "claude.exe"):
+            candidates += glob.glob(os.path.join(home, ext_dir, "anthropic.claude-code-*", "resources", "native-binary", name))
     candidates = [c for c in candidates if os.access(c, os.X_OK)]
     if candidates:
         return max(candidates, key=os.path.getmtime)
@@ -54,7 +55,8 @@ def claude(prompt, *, system, model=None, tools=None, timeout=600, label="Claude
     env = {k: v for k, v in os.environ.items() if k not in _SESSION_ENV}
     with Spinner(label):
         try:
-            r = subprocess.run(cmd, input=prompt, capture_output=True, text=True, env=env, timeout=timeout)
+            r = subprocess.run(cmd, input=prompt, capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", env=env, timeout=timeout)
         except subprocess.TimeoutExpired:
             die(f"Claude timed out after {timeout}s")
     try:

@@ -1,12 +1,13 @@
 import argparse
 import os
+import subprocess
 import sys
 
 from .commit import edit_in_editor, generate_message, git_commit, message_context, print_message
 from .docs import sync_docs
 from .knowledge import background_refresh_entry, build_knowledge, ensure_knowledge, refresh_knowledge_in_background
 from .repo import Repo
-from .util import ask, die, git, git_bin
+from .util import ask, die, git, git_bin, setup_console
 
 
 def commit_parser():
@@ -135,10 +136,14 @@ def main():
         known = {"-a", "--all", "-y", "--yes", "--no-docs", "-h", "--help"}
         if argv[0] != "commit" or all(a in known for a in argv[1:]):
             return commands[argv[0]](argv[1:])
+    if os.name == "nt":
+        # Windows has no real exec: os.execv would hand the prompt back before git finishes.
+        sys.exit(subprocess.call([git_bin(), *argv]))
     os.execv(git_bin(), ["git", *argv])
 
 
 def run():
+    setup_console()
     try:
         main()
     except KeyboardInterrupt:

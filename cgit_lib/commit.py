@@ -5,7 +5,7 @@ import tempfile
 
 from .claude import claude
 from .prompts import MESSAGE_SYSTEM
-from .util import clip, git, git_bin, strip_fences
+from .util import clip, git, git_bin, sh_bin, strip_fences
 
 
 def message_context(repo, knowledge):
@@ -38,12 +38,12 @@ def generate_message(repo, context, previous=None, feedback=None):
 
 def edit_in_editor(text):
     editor = git("var", "GIT_EDITOR").strip()
-    with tempfile.NamedTemporaryFile("w+", suffix="COMMIT_EDITMSG", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w+", suffix="COMMIT_EDITMSG", delete=False, encoding="utf-8") as f:
         f.write(text + "\n")
         path = f.name
     try:
-        subprocess.run(["/bin/sh", "-c", f'{editor} "$1"', editor, path])
-        with open(path) as f:
+        subprocess.run([sh_bin(), "-c", f'{editor} "$1"', editor, path])
+        with open(path, encoding="utf-8") as f:
             lines = [l for l in f.read().splitlines() if not l.startswith("#")]
         return "\n".join(lines).strip()
     finally:
@@ -60,7 +60,7 @@ def print_message(msg):
 
 
 def git_commit(message, *extra):
-    with tempfile.NamedTemporaryFile("w", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
         f.write(message + "\n")
         path = f.name
     try:

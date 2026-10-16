@@ -6,14 +6,17 @@ import time
 from .claude import claude
 from .prompts import KNOWLEDGE_BUILD_SYSTEM, KNOWLEDGE_UPDATE_SYSTEM
 from .repo import Repo
-from .util import LAUNCHER, clip, git, git_bin, info, strip_fences
+from .util import clip, git, git_bin, info, strip_fences
+
+# Directory holding cgit_lib, so `python -m cgit_lib` works from a checkout too.
+_PKG_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def load_knowledge(repo):
     try:
-        with open(repo.path("knowledge.md")) as f:
+        with open(repo.path("knowledge.md"), encoding="utf-8") as f:
             text = f.read()
-        with open(repo.path("knowledge.base")) as f:
+        with open(repo.path("knowledge.base"), encoding="utf-8") as f:
             base = f.read().strip()
         return text, base
     except FileNotFoundError:
@@ -23,7 +26,7 @@ def load_knowledge(repo):
 def save_knowledge(repo, text, base):
     for name, content in (("knowledge.md", text), ("knowledge.base", base or "")):
         tmp = repo.path(name + ".tmp")
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             f.write(content)
         os.replace(tmp, repo.path(name))
 
@@ -85,17 +88,43 @@ def ensure_knowledge(repo):
 def _lock_alive(lock):
     try:
         with open(lock) as f:
-            os.kill(int(f.read().strip()), 0)
+            pid = int(f.read().strip())
+    except (ValueError, FileNotFoundError, PermissionError):
+        return False
+    return _pid_alive(pid)
+
+
+def _pid_alive(pid):
+    if os.name == "nt":
+        # os.kill(pid, 0) would terminate the process on Windows, so ask the kernel instead.
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.OpenProcess.restype = ctypes.c_void_p
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        code = ctypes.c_ulong()
+        ok = kernel32.GetExitCodeProcess(ctypes.c_void_p(handle), ctypes.byref(code))
+        kernel32.CloseHandle(ctypes.c_void_p(handle))
+        return bool(ok) and code.value == 259  # STILL_ACTIVE
+    try:
+        os.kill(pid, 0)
         return True
-    except (ValueError, ProcessLookupError, FileNotFoundError, PermissionError):
+    except (ProcessLookupError, PermissionError):
         return False
 
 
 def refresh_knowledge_in_background(repo):
     log = open(repo.path("refresh.log"), "w")
-    proc = subprocess.Popen([sys.executable, LAUNCHER, "__refresh-knowledge"],
+    if os.name == "nt":
+        # A hidden console of its own: survives the terminal closing, and `claude` opens no window.
+        detach = {"creationflags": subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP}
+    else:
+        detach = {"start_new_session": True}
+    pythonpath = os.pathsep.join(p for p in (_PKG_PARENT, os.environ.get("PYTHONPATH")) if p)
+    proc = subprocess.Popen([sys.executable, "-m", "cgit_lib", "__refresh-knowledge"],
                             cwd=repo.root, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-                            start_new_session=True)
+                            env=dict(os.environ, PYTHONPATH=pythonpath), **detach)
     # Written by the parent so an immediate next `cgit commit` already sees it.
     with open(repo.path("refresh.lock"), "w") as f:
         f.write(str(proc.pid))

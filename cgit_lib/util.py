@@ -24,21 +24,60 @@ def warn(msg):
     print(f"\033[33m! {msg}\033[0m", file=sys.stderr)
 
 
+def setup_console():
+    """Windows: turn on ANSI colours in the console and never crash on unencodable output."""
+    if os.name != "nt":
+        return
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    kernel32.GetStdHandle.restype = ctypes.c_void_p
+    for std in (-11, -12):  # STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
+        handle = ctypes.c_void_p(kernel32.GetStdHandle(std))
+        mode = ctypes.c_ulong()
+        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    for stream in (sys.stdout, sys.stderr):
+        if stream:
+            stream.reconfigure(errors="replace")
+
+
 @functools.cache
 def git_bin():
     explicit = os.environ.get("CGIT_GIT_BIN")
     if explicit:
         return shutil.which(explicit) or die(f"CGIT_GIT_BIN={explicit} is not an executable")
+    names = ["git"]
+    if os.name == "nt":
+        names = ["git" + ext.lower() for ext in os.environ.get("PATHEXT", ".EXE").split(os.pathsep) if ext]
     # Skip cgit itself, so it can be installed under the name `git`.
+    self_paths = {os.path.normcase(p) for p in (LAUNCHER, os.path.realpath(sys.argv[0]))}
     for d in os.environ.get("PATH", "").split(os.pathsep):
-        p = os.path.join(d or ".", "git")
-        if os.path.isfile(p) and os.access(p, os.X_OK) and os.path.realpath(p) != LAUNCHER:
-            return p
+        for name in names:
+            p = os.path.join(d or ".", name)
+            if (os.path.isfile(p) and os.access(p, os.X_OK)
+                    and os.path.normcase(os.path.realpath(p)) not in self_paths):
+                return p
     die("git not found on PATH. Install it or set CGIT_GIT_BIN to the real `git` binary.")
 
 
+@functools.cache
+def sh_bin():
+    """A POSIX shell for running git's editor command; on Windows, the one shipped with Git for Windows."""
+    if os.name != "nt":
+        return "/bin/sh"
+    # git.exe lives in Git\cmd, Git\bin or Git\mingw64\bin; sh.exe in Git\bin or Git\usr\bin.
+    git_dir = os.path.dirname(os.path.realpath(git_bin()))
+    for top in (os.path.dirname(git_dir), os.path.dirname(os.path.dirname(git_dir))):
+        for rel in ("bin", os.path.join("usr", "bin")):
+            p = os.path.join(top, rel, "sh.exe")
+            if os.path.isfile(p):
+                return p
+    return shutil.which("sh") or die("sh not found; it ships with Git for Windows and is needed to run your git editor")
+
+
 def git(*args, check=True, input=None):
-    r = subprocess.run([git_bin(), *args], capture_output=True, text=True, input=input)
+    r = subprocess.run([git_bin(), *args], capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", input=input)
     if check and r.returncode != 0:
         die(f"git {' '.join(args)} failed:\n{r.stderr.strip()}")
     return r.stdout

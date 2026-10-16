@@ -66,12 +66,23 @@ What should change? › use a feat: prefix
 
 ## Install
 
+On Linux, macOS and Windows, install it as a Python tool with
+[uv](https://docs.astral.sh/uv/) or [pipx](https://pipx.pypa.io/):
+
 ```sh
-./install.sh            # symlinks ./cgit into ~/.local/bin
+uv tool install /path/to/cgit        # or: pipx install /path/to/cgit
+uv tool install -e /path/to/cgit     # editable: edits to the checkout apply at once
+uv tool upgrade cgit                 # after pulling changes (non-editable install)
+uv tool uninstall cgit
 ```
 
-`cgit` is a thin launcher. The code lives in `cgit_lib/` next to it, so keep
-the two together. The symlink resolves back to this checkout.
+This puts a `cgit` command (`cgit.exe` on Windows) on `PATH`. If `PATH`
+doesn't include it yet, `uv tool update-shell` adds it. uv also downloads a
+suitable Python if yours is too old.
+
+On Linux and macOS you can instead run `./install.sh`, which symlinks the
+`cgit` launcher from this checkout into `~/.local/bin`. The launcher is thin:
+the code lives in `cgit_lib/` next to it, so keep the two together.
 
 Requirements:
 
@@ -88,7 +99,11 @@ it needs no API key of its own. It looks for the binary in this order:
 1. `$CGIT_CLAUDE_BIN`
 2. `claude` on `PATH`
 3. The binary bundled with the VS Code extension
-   (`~/.vscode-server/extensions/anthropic.claude-code-*/…`)
+   (`~/.vscode-server/extensions/anthropic.claude-code-*/…`, or
+   `%USERPROFILE%\.vscode\extensions\…` on Windows)
+
+On Windows, cgit runs your git editor (for **m** in the commit review) through
+the `sh.exe` that ships with Git for Windows, just as git does.
 
 ## Per-repo configuration
 

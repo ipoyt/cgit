@@ -11,6 +11,7 @@ class Repo:
         root = git("rev-parse", "--show-toplevel", check=False).strip()
         if not root:
             die("not inside a git repository")
+        root = os.path.normpath(root)  # git prints C:/... on Windows; commonpath below needs C:\...
         os.chdir(root)
         self.root = root
         self.cfg = dict(DEFAULT_CONFIG)
