@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""cgit launcher; the implementation lives in cgit_lib/ next to this file."""
+
+import os
+import sys
+
+# Resolve the symlink install.sh puts on PATH so cgit_lib/ is found next to the real file.
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from cgit_lib.cli import run
+
+if __name__ == "__main__":
+    run()

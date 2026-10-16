@@ -1,0 +1,25 @@
+# Copy to `.cgit.toml` in the root of a repo to override cgit defaults.
+# Every key is optional.
+
+# Claude models (aliases "sonnet" / "opus" / "haiku" or full model IDs).
+message_model = "sonnet"
+docs_model = "sonnet"
+knowledge_model = "sonnet"
+
+# Tracked files the docs agent may edit (fnmatch globs; `*` also matches `/`).
+docs = ["*.md", "*.rst", "*.adoc", "docs/*", "doc/*"]
+docs_exclude = ["CHANGELOG*", ".github/*"]
+
+# Standard docs commit. Placeholders: {sha} {short_sha} {subject}
+docs_commit_message = "docs: sync documentation with {short_sha}"
+docs_commit_body = "Automatically updated by cgit to reflect {short_sha} ({subject})."
+
+# Show the docs diff and ask before committing it.
+review_docs = false
+
+# Extra rules for the commit message, e.g. ticket prefixes.
+message_guidelines = "Prefix the subject with the FTD-<n> ticket from the branch name."
+
+# Diff size sent to Claude before truncation, and knowledge-base size target.
+max_diff_chars = 60000
+knowledge_max_words = 1500
